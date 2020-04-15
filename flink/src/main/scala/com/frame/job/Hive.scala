@@ -28,14 +28,20 @@ object Hive {
 
     stEnv.registerCatalog("test", hiveCatalog)
     stEnv.useCatalog("test")
+    //    val sql =
+    //      s"""
+    //         |select p
+    //         |from game_ods.event
+    //         |where app='game_skuld_01'
+    //         |and dt = '2019-09-25'
+    //         |and event='event_user.track_2'
+    //         |limit 1
+    //         |""".stripMargin
+
     val sql =
       s"""
-         |select p
-         |from game_ods.event
-         |where app='game_skuld_01'
-         |and dt = '2019-09-25'
-         |and event='event_user.track_2'
-         |limit 1
+         |select *
+         |from flink_test
          |""".stripMargin
 
     val src = stEnv.sqlQuery(sql)
