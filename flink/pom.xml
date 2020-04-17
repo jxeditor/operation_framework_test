@@ -84,7 +84,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-connector-kafka-0.11_${scala.2.11.version}</artifactId>
+            <artifactId>flink-connector-kafka_${scala.2.11.version}</artifactId>
             <version>${flink.version}</version>
         </dependency>
         <dependency>

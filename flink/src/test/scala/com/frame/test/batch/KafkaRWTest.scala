@@ -12,8 +12,8 @@ import com.google.common.base.Joiner
 import org.apache.flink.api.common.functions.MapFunction
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer011, FlinkKafkaProducer010}
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.connectors.kafka.{FlinkKafkaConsumer, FlinkKafkaProducer}
 import org.junit.Test
 
 import scala.collection.mutable
@@ -44,15 +44,15 @@ class KafkaRWTest {
     props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
     props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
 
-    val student = env.addSource(new FlinkKafkaConsumer011(
+    val student = env.addSource(new FlinkKafkaConsumer(
       READ_TOPIC,
       new SimpleStringSchema, props).setStartFromLatest())
 
-    // student.addSink(new FlinkKafkaProducer010("skuldcdhtest1.ktcs:9092", "sink_test", new SimpleStringSchema)).name("sink_test")
-    //    val clean = student.map(data => {
-    //      val original = new JSONObject(data)
-    //      (original.getJSONObject("param_data").toString)
-    //    })
+//     student.addSink(new FlinkKafkaProducer("skuldcdhtest1.ktcs:9092", "sink_test", new SimpleStringSchema)).name("sink_test")
+//        val clean = student.map(data => {
+//          val original = new JSONObject(data)
+//          (original.getJSONObject("param_data").toString)
+//        })
 
     val clean = student.map(new DataCleanMapFunction)
 
@@ -133,6 +133,7 @@ class DataCleanMapFunction extends MapFunction[String, EventKafkaGame] {
   val ROLE_ROLE_ID = PARAM_ROLE_PREFIX + ROLE_ORIGINAL_ROLE_ID
 
   val DEFAULT_NONE = "none"
+  val DEFAULT_UNIX = "631123200"
 
   override def map(t: String): EventKafkaGame = {
     val map = mutable.HashMap[String, String]()
@@ -190,30 +191,30 @@ class DataCleanMapFunction extends MapFunction[String, EventKafkaGame] {
 
     // 根据info和map中的值进行数据填充
     val id = ""
-    val appId = map.remove(DATA_APP_ID).orElse(map.get("default")).get
-    val dataUnix = map.remove(DATA_DATA_UNIX).orElse(map.get("defaultUnix")).get.toInt
+    val appId = map.remove(DATA_APP_ID).getOrElse(DEFAULT_NONE)
+    val dataUnix = map.remove(DATA_DATA_UNIX).getOrElse(DEFAULT_UNIX).toInt
     val dt = Instant.ofEpochMilli(
       dataUnix * 1000L
     ).atZone(ZoneOffset.ofHours(8)).toLocalDate.toString
 
-    val eventCategory = map.remove(DATA_CATEGORY).orElse(map.get("default")).get
-    val eventType = map.remove(EVENT_T0_S).orElse(map.get("default")).get
+    val eventCategory = map.remove(DATA_CATEGORY).getOrElse(DEFAULT_NONE)
+    val eventType = map.remove(EVENT_T0_S).getOrElse(DEFAULT_NONE)
 
-    val platform = map.remove(DATA_PLATFORM).orElse(map.get("default")).get
-    if (platform.isEmpty) map.get("default")
-    val channel = map.remove(DATA_CHANNEL).orElse(map.get("default")).get
-    if (channel.isEmpty) map.get("default")
-    val region = map.remove(DATA_REGION).orElse(map.get("default")).get
-    if (region.isEmpty) map.get("default")
-    val server = map.remove(DATA_SERVER).orElse(map.get("default")).get
-    if (server.isEmpty) map.get("default")
+    var platform = map.remove(DATA_PLATFORM).getOrElse(DEFAULT_NONE)
+    if (platform.isEmpty) platform = DEFAULT_NONE
+    var channel = map.remove(DATA_CHANNEL).getOrElse(DEFAULT_NONE)
+    if (channel.isEmpty) channel = DEFAULT_NONE
+    var region = map.remove(DATA_REGION).getOrElse(DEFAULT_NONE)
+    if (region.isEmpty) region = DEFAULT_NONE
+    var server = map.remove(DATA_SERVER).getOrElse(DEFAULT_NONE)
+    if (server.isEmpty) server = DEFAULT_NONE
 
-    val did = map.remove(ENV_DEVICE_ID).orElse(map.get("default")).get
+    val did = map.remove(ENV_DEVICE_ID).getOrElse(DEFAULT_NONE)
 
-    val userId = map.remove(USER_USER_ID).orElse(map.get("default")).get
+    val userId = map.remove(USER_USER_ID).getOrElse(DEFAULT_NONE)
     val uid = if (DEFAULT_NONE.equals(userId)) DEFAULT_NONE else Joiner.on("|").useForNull(DEFAULT_NONE).join(channel, userId)
 
-    val roleId = map.remove(ROLE_ROLE_ID).orElse(map.get("default")).get
+    val roleId = map.remove(ROLE_ROLE_ID).getOrElse(DEFAULT_NONE)
     val rid = if (DEFAULT_NONE.equals(userId) || DEFAULT_NONE.equals(roleId)) DEFAULT_NONE else Joiner.on("|").useForNull(DEFAULT_NONE).join(uid, region, server, roleId)
 
     val event = Joiner.on(".").join(eventCategory, eventType)
