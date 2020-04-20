@@ -17,11 +17,11 @@ class HiveRWTest extends Assert {
   @Test
   def readHiveTest(): Unit = {
     // System.setProperty("hadoop.home.dir", "E:\\Soft\\hadoop-2.8.0")
-    val env = StreamExecutionEnvironment.getExecutionEnvironment
-    val settings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build
-    val tEnv = StreamTableEnvironment.create(env, settings)
-    //    val settings = EnvironmentSettings.newInstance().useBlinkPlanner().inBatchMode().build()
-    //    val tEnv = TableEnvironment.create(settings)
+    //    val env = StreamExecutionEnvironment.getExecutionEnvironment
+    //    val settings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build
+    //    val tEnv = StreamTableEnvironment.create(env, settings)
+    val settings = EnvironmentSettings.newInstance().useBlinkPlanner().inBatchMode().build()
+    val tEnv = TableEnvironment.create(settings)
 
 
     val hiveCatalog = new HiveCatalog("test", "default",
@@ -30,7 +30,7 @@ class HiveRWTest extends Assert {
     tEnv.registerCatalog("test", hiveCatalog)
     tEnv.useCatalog("test")
     //    tEnv.sqlUpdate(createMysqlTable())
-    //        tEnv.sqlUpdate(createKafkaTable())
+    tEnv.sqlUpdate(createKafkaTable())
     tEnv.listTables().foreach(println)
 
     // 当结果表为Hive表时
@@ -67,7 +67,7 @@ class HiveRWTest extends Assert {
 
     tEnv.sqlUpdate(
       s"""
-         |insert into demo
+         |insert into demo1
          |SELECT uid,rid
          |FROM $table
          |""".stripMargin)
@@ -101,9 +101,9 @@ class HiveRWTest extends Assert {
       |    'connector.version' = 'universal',  -- kafka 版本
       |    'connector.topic' = 'test01',  -- kafka topic
       |    'connector.properties.0.key' = 'zookeeper.connect',  -- zk连接信息
-      |    'connector.properties.0.value' = 'skuldcdhtest1.ktcs.com:2181',  -- zk连接信息
+      |    'connector.properties.0.value' = 'skuldcdhtest1.ktcs:2181',  -- zk连接信息
       |    'connector.properties.1.key' = 'bootstrap.servers',  -- broker连接信息
-      |    'connector.properties.1.value' = 'skuldcdhtest1.ktcs.com:9092',  -- broker连接信息
+      |    'connector.properties.1.value' = 'skuldcdhtest1.ktcs:9092',  -- broker连接信息
       |    'connector.sink-partitioner' = 'fixed',
       |    'update-mode' = 'append',
       |    'format.type' = 'json',  -- 数据源格式为 json
