@@ -94,9 +94,8 @@
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
-            <artifactId>flink-connector-elasticsearch6_${scala.2.11.version}</artifactId>
+            <artifactId>flink-connector-elasticsearch7_${scala.2.11.version}</artifactId>
             <version>${flink.version}</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.flink</groupId>
@@ -204,6 +203,12 @@
             <groupId>com.mchange</groupId>
             <artifactId>c3p0</artifactId>
             <version>${mchange.c3p0.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.8.11</version>
         </dependency>
     </dependencies>
 
