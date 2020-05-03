@@ -28,6 +28,13 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-sql-parser</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
+
         <!-- flink -->
         <dependency>
             <groupId>org.apache.flink</groupId>

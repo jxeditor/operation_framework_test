@@ -1,5 +1,7 @@
 package com.frame.test.batch
 
+import com.frame.test.batch.hbase1.HBaseAsyncLookupTableSource
+import org.apache.flink.api.common.typeinfo.Types
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.scala.StreamTableEnvironment
 import org.junit.{Assert, Test}
@@ -33,6 +35,15 @@ class HiveRWTest extends Assert {
     tEnv.sqlUpdate(createKafkaTable())
     tEnv.listTables().foreach(println)
 
+    val hbaseSource = HBaseAsyncLookupTableSource.Builder.newBuilder()
+      .withFieldNames(Array("id", "name", "age"))
+      .withFieldTypes(Array(Types.STRING, Types.STRING, Types.STRING))
+      .withTableName("user")
+      .withFieldNames(Array())
+      .withZkQuorum("")
+      .build()
+    tEnv.fromTableSource(hbaseSource)
+
     // 当结果表为Hive表时
     //    tEnv.getConfig.setSqlDialect(SqlDialect.HIVE)
 
@@ -51,26 +62,26 @@ class HiveRWTest extends Assert {
     //    val rows = TableUtils.collectToList(table)
     //    println(rows)
 
-    val table = tEnv.sqlQuery(
-      s"""
-         |SELECT *, ROW_NUMBER() OVER (PARTITION BY rid ORDER BY data_unix DESC) AS num
-         |FROM  game_ods.event
-         |WHERE app = 'game_skuld_01'
-         |  AND dt = '2019-08-16'
-         |  AND event = 'event_role.login_1'
-         |""".stripMargin
-    ).filter("num = 1").select(
-      "uid,rid"
-    ).groupBy(
-      "uid,rid"
-    ).select("uid,rid")
+//    val table = tEnv.sqlQuery(
+//      s"""
+//         |SELECT *, ROW_NUMBER() OVER (PARTITION BY rid ORDER BY data_unix DESC) AS num
+//         |FROM  game_ods.event
+//         |WHERE app = 'game_skuld_01'
+//         |  AND dt = '2019-08-16'
+//         |  AND event = 'event_role.login_1'
+//         |""".stripMargin
+//    ).filter("num = 1").select(
+//      "uid,rid"
+//    ).groupBy(
+//      "uid,rid"
+//    ).select("uid,rid")
 
-    tEnv.sqlUpdate(
-      s"""
-         |insert into demo1
-         |SELECT uid,rid
-         |FROM $table
-         |""".stripMargin)
+//    tEnv.sqlUpdate(
+//      s"""
+//         |insert into demo1
+//         |SELECT uid,rid
+//         |FROM $table
+//         |""".stripMargin)
     tEnv.execute("")
   }
 

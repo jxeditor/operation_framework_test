@@ -8,10 +8,12 @@
         <outputRelativeToContentRoot value="true" />
         <module name="spark" />
         <module name="flink" />
+        <module name="graph" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="flink" target="1.8" />
+      <module name="graph" target="1.8" />
       <module name="spark" target="1.8" />
     </bytecodeTargetLevel>
   </component>

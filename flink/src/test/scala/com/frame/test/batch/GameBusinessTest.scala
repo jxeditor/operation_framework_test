@@ -43,23 +43,26 @@ class GameBusinessTest extends Assert {
 
   tEnv.getConfig.getConfiguration.setBoolean(OptimizerConfigOptions.TABLE_OPTIMIZER_JOIN_REORDER_ENABLED, true)
   tEnv.getConfig.getConfiguration.setBoolean(OptimizerConfigOptions.TABLE_OPTIMIZER_REUSE_SOURCE_ENABLED, false)
+  tEnv.getConfig.getConfiguration.setBoolean(OptimizerConfigOptions.TABLE_OPTIMIZER_REUSE_SUB_PLAN_ENABLED, false)
+  tEnv.getConfig.getConfiguration.setBoolean(OptimizerConfigOptions.TABLE_OPTIMIZER_SOURCE_PREDICATE_PUSHDOWN_ENABLED, false)
   tEnv.getConfig.getConfiguration.setLong(OptimizerConfigOptions.TABLE_OPTIMIZER_BROADCAST_JOIN_THRESHOLD, 10485760L)
   tEnv.getConfig.getConfiguration.setInteger(ExecutionConfigOptions.TABLE_EXEC_RESOURCE_DEFAULT_PARALLELISM, 1)
   tEnv.getConfig.getConfiguration.setInteger(ExecutionConfigOptions.TABLE_EXEC_SORT_DEFAULT_LIMIT, 200)
   tEnv.getConfig.addConfiguration(GlobalConfiguration.loadConfiguration)
 
-  //  val hiveCatalog = new HiveCatalog("catalog", "default",
-  //    "F:\\operation_framework_test\\flink\\src\\main\\resources\\hive_conf", "2.1.1")
-  //  hiveCatalog.getHiveConf.set("dfs.client.use.datanode.hostname", "true")
-  //  tEnv.getConfig.setSqlDialect(SqlDialect.HIVE)
-  //  tEnv.registerCatalog("catalog", hiveCatalog)
-  //  tEnv.useCatalog("catalog")
-  //
-  //  btEnv.getConfig.setSqlDialect(SqlDialect.HIVE)
-  //  btEnv.registerCatalog("catalog", hiveCatalog)
-  //  btEnv.useCatalog("catalog")
+  val hiveCatalog = new HiveCatalog("catalog", "default",
+    "F:\\operation_framework_test\\flink\\src\\main\\resources\\hive_conf", "2.1.1")
+  hiveCatalog.getHiveConf.set("dfs.client.use.datanode.hostname", "true")
+  tEnv.getConfig.setSqlDialect(SqlDialect.HIVE)
+  tEnv.registerCatalog("catalog", hiveCatalog)
+  tEnv.useCatalog("catalog")
+
+  btEnv.getConfig.setSqlDialect(SqlDialect.HIVE)
+  btEnv.registerCatalog("catalog", hiveCatalog)
+  btEnv.useCatalog("catalog")
 
   tEnv.registerFunction("udfMapFilterNotKeyPre", new MapFilterNotKeyPreUdf)
+  tEnv.registerFunction("udfOnlineTime", new OnlineTimeUdf)
 
   @Test
   @Description("ODS->DWA(最后登录数据)")
@@ -124,7 +127,7 @@ class GameBusinessTest extends Assert {
   @Test
   @Description("ODS->DWA(用户付费数据)")
   def dwaPayBase(): Unit = {
-    val table: Table = tEnv.sqlQuery(
+    val table = tEnv.sqlQuery(
       s"""
          |SELECT rid, cast(p['t_t4_d'] as int) as pay
          |FROM  game_ods.event
@@ -144,7 +147,13 @@ class GameBusinessTest extends Assert {
 
     val table1 = btEnv.fromDataSet(result, 'rid, 'total, 'times)
 
-    table1.select('rid).insertInto("test")
+    btEnv.sqlUpdate(
+      s"""
+         |insert into test
+         |select rid
+         |from $table1
+         |""".stripMargin)
+    //    table1.select('rid).insertInto("test")
     btEnv.execute("")
   }
 
@@ -283,42 +292,37 @@ class GameBusinessTest extends Assert {
   @Test
   @Description("DWS->ADS(活跃基础详情数据)")
   def adsActiveBase(): Unit = {
-    val env = StreamExecutionEnvironment.getExecutionEnvironment
-    val settings = EnvironmentSettings.newInstance().useBlinkPlanner().inStreamingMode().build
-    val tEnv = StreamTableEnvironment.create(env, settings)
+    val settings = EnvironmentSettings.newInstance().useBlinkPlanner().inBatchMode().build()
+    val tEnv = TableEnvironment.create(settings)
     val table1 = tEnv.sqlQuery(s"select 1002 as id, 1587378463 as unix, 'LOGIN' as type")
     val table2 = tEnv.sqlQuery(s"select 1002 as id, 1587388463 as unix, 'LOGOUT' as type")
 
     val table = table1.unionAll(table2)
-
     val table3 = tEnv.sqlQuery(
       s"""
-         |select id, cast(unix as string) as unix, cast(type as string) as type
+         |select id, concat_ws('|',cast(unix as string), cast(type as string)) as type
          |from $table
          |""".stripMargin)
-
     val table4 = tEnv.sqlQuery(
       s"""
-         |select cast(id as string) id, listagg(type) as str
+         |select cast(id as string) id, listagg(type) as rid
          |from $table3
          |group by id
          |""".stripMargin)
-
-    //    val rows = TableUtils.collectToList(table4)
-    //    rows.toArray().foreach(println)
-
-    tEnv.sqlUpdate(createEsTable())
-    tEnv.sqlUpdate(
-      s"""
-         |insert into test_xs_01
-         |select str
-         |from $table4
-         |group by str
-         |""".stripMargin)
+    val rows = TableUtils.collectToList(table4)
+    rows.toArray().foreach(println)
+//
+//
+//    tEnv.sqlUpdate(createEsTable())
+//    tEnv.sqlUpdate(
+//      s"""
+//         |insert into test
+//         |select rid
+//         |from $table4
+//         |""".stripMargin)
 
     tEnv.execute("")
   }
-
 
   def createKafkaTable(): String = {
     """
@@ -353,7 +357,7 @@ class GameBusinessTest extends Assert {
        | 'connector.hosts' = 'http://skuldcdhtest1.ktcs:9200;http://skuldcdhtest2.ktcs:9200;http://skuldcdhtest3.ktcs:9200',
        | 'connector.index' = 'test_xs_01',
        | 'connector.document-type' = 'test_xs_01',
-       | 'update-mode' = 'upsert',
+       | 'update-mode' = 'append',
        | 'format.type' = 'json'
        |)
        |""".stripMargin
