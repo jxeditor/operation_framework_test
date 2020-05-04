@@ -21,7 +21,7 @@ object SparkGraph {
     }
 
     def inStreamMode(): Builder = synchronized {
-      conf.setMaster("local").setAppName("stream").set("executor-mode", "stream")
+      conf.setMaster("local[*]").setAppName("stream").set("executor-mode", "stream")
       this
     }
 
@@ -30,7 +30,7 @@ object SparkGraph {
     def draw(): Graph = {
       val session = SparkSession.builder.config(conf).enableHiveSupport.getOrCreate
       if (conf.get("executor-mode").equals("stream")) {
-        val sc: StreamingContext = new StreamingContext(conf, Seconds(5))
+        val sc: StreamingContext = new StreamingContext(session.sparkContext, Seconds(5))
         new SparkStreamGraph(sc)
       } else {
         new SparkBatchGraph(session)
@@ -62,7 +62,18 @@ class SparkBatchGraph(session: SparkSession) extends GraphImpl {
 class SparkStreamGraph(sc: StreamingContext) extends GraphImpl {
   /** 连接节点 */
   override def linkPoint(name: String, point: Point): Unit = {
-
+    point match {
+      case value: ExecPoint[StreamingContext] =>
+        value.process(sc)
+        val toMap = edgeMap(name)
+        toMap.foreach(x => {
+          val toName = x._1
+          val toPoint = pointMap(toName)
+          linkPoint(toName, toPoint)
+        })
+      case _ =>
+        point.asInstanceOf[EndPoint[StreamingContext]].process(sc)
+    }
   }
 }
 

@@ -1,13 +1,13 @@
 package com.example.jobtasks
 
-import com.example.job.{TaskCommon, TaskJobCommon}
-import com.example.spark.PredefSparkJob.Session
+import com.example.spark.{SparkStreamTaskJobCommon, StreamTaskCommon}
+import org.apache.spark.streaming.StreamingContext
 
 /**
   * @author XiaShuai on 2020/4/24.
   */
-class Test2Job(implicit override val session: Session) extends TaskJobCommon {
-  override def executeTasks(): Array[Class[_ <: TaskCommon]] = {
+class Test2Job(implicit override val sc: StreamingContext) extends SparkStreamTaskJobCommon {
+  override def executeTasks(): Array[Class[_ <: StreamTaskCommon]] = {
     Array(classOf[Test2Task])
   }
 }

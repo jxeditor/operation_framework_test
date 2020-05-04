@@ -1,7 +1,7 @@
-package com.example.develop
+package com.example.develop.batch
 
+import com.example.core.EndPoint
 import com.example.spark.PredefSparkJob.Session
-import com.example.core.{EndPoint, ExecPoint}
 
 /**
   * @author XiaShuai on 2020/4/23.
