@@ -6,8 +6,8 @@ import scala.collection.mutable
   * @author XiaShuai on 2020/5/3.
   */
 abstract class GraphImpl[T](V: T) extends Graph {
-  val pointMap = mutable.Map[String, Point]()
-  val edgeMap = mutable.Map[String, mutable.Map[String, AnyRef => Boolean]]()
+  val pointMap: mutable.Map[String, Point] = mutable.Map[String, Point]()
+  val edgeMap: mutable.Map[String, mutable.Map[String, AnyRef => Boolean]] = mutable.Map[String, mutable.Map[String, AnyRef => Boolean]]()
 
   def addPoint(name: String, point: Point): Unit = {
     pointMap(name) = point

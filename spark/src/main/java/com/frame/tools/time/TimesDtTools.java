@@ -244,4 +244,10 @@ public class TimesDtTools {
         final int dtOfWeek = LocalDate.parse(dt, DATE_TIME_FORMATTER_YYYY_MM_DD).getDayOfWeek().getValue();
         return dt(dt, 7 - dtOfWeek + plusWeek * 7);
     }
+
+    public static void main(String[] args) {
+        System.out.println(TimesDtTools.monday("2020-05-03", 0));
+        System.out.println(TimesDtTools.sunday("2020-05-03", 0));
+        System.out.println(TimesDtTools.monday("2020-05-03", -1));
+    }
 }

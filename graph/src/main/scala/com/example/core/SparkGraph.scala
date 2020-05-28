@@ -13,7 +13,7 @@ object SparkGraph {
 
   class Builder {
     private[this] val conf = new SparkConf()
-    private[this] val topics = new util.ArrayList[String]()
+    private[this] val topics = Array[String]()
 
     def inBatchMode(): Builder = synchronized {
       conf.setMaster("local").setAppName("batch").set("executor-mode", "batch")
@@ -25,7 +25,12 @@ object SparkGraph {
       this
     }
 
-    def topics(): util.ArrayList[String] = new util.ArrayList[String]()
+    def kafkaOption(): Builder = synchronized {
+      conf.set("spark.streaming.kafka.maxRatePerPartition", "10")
+        .set("spark.streaming.kafka.consumer.poll.ms", "120000")
+        .set("spark.streaming.backpressure.enabled", "true") // 开启kafka背压机制
+      this
+    }
 
     def draw(): Graph = {
       val session = SparkSession.builder.config(conf).enableHiveSupport.getOrCreate
@@ -65,6 +70,7 @@ class SparkStreamGraph(sc: StreamingContext) extends GraphImpl {
     point match {
       case value: ExecPoint[StreamingContext] =>
         value.process(sc)
+        val cost1 = System.currentTimeMillis()
         val toMap = edgeMap(name)
         toMap.foreach(x => {
           val toName = x._1

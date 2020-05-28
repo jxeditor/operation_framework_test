@@ -129,32 +129,35 @@ class GameBusinessTest extends Assert {
   def dwaPayBase(): Unit = {
     val table = tEnv.sqlQuery(
       s"""
-         |SELECT rid, cast(p['t_t4_d'] as int) as pay
+         |SELECT rid, sum(cast(p['t_t4_d'] as int)) as pay
          |FROM  game_ods.event
          |WHERE app   = 'game_skuld_01'
          |  AND dt    = '2019-08-16'
          |  AND event = 'event_role.pay_3_d'
+         |GROUP by rid
          |""".stripMargin
     )
+    val rows = TableUtils.collectToList(table)
+    rows.toArray().foreach(println)
+//
+//    val rows = TableUtils.collectToList(table).toArray().map(x => {
+//      val row = x.asInstanceOf[Row]
+//      (row.getField(0).toString, row.getField(1).toString.toInt, 1)
+//    })
+//    val result = env.fromCollection(rows)
+//      .groupBy(0).sum(1)
+//      .groupBy(0).sum(2)
+//
+//    val table1 = btEnv.fromDataSet(result, 'rid, 'total, 'times)
 
-    val rows = TableUtils.collectToList(table).toArray().map(x => {
-      val row = x.asInstanceOf[Row]
-      (row.getField(0).toString, row.getField(1).toString.toInt, 1)
-    })
-    val result = env.fromCollection(rows)
-      .groupBy(0).sum(1)
-      .groupBy(0).sum(2)
-
-    val table1 = btEnv.fromDataSet(result, 'rid, 'total, 'times)
-
-    btEnv.sqlUpdate(
-      s"""
-         |insert into test
-         |select rid
-         |from $table1
-         |""".stripMargin)
+//    btEnv.sqlUpdate(
+//      s"""
+//         |insert into test
+//         |select rid
+//         |from $table1
+//         |""".stripMargin)
     //    table1.select('rid).insertInto("test")
-    btEnv.execute("")
+    tEnv.execute("")
   }
 
   @Test

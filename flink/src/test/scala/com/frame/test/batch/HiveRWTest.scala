@@ -1,6 +1,5 @@
 package com.frame.test.batch
 
-import com.frame.test.batch.hbase1.HBaseAsyncLookupTableSource
 import org.apache.flink.api.common.typeinfo.Types
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.table.api.scala.StreamTableEnvironment
@@ -34,15 +33,6 @@ class HiveRWTest extends Assert {
     //    tEnv.sqlUpdate(createMysqlTable())
     tEnv.sqlUpdate(createKafkaTable())
     tEnv.listTables().foreach(println)
-
-    val hbaseSource = HBaseAsyncLookupTableSource.Builder.newBuilder()
-      .withFieldNames(Array("id", "name", "age"))
-      .withFieldTypes(Array(Types.STRING, Types.STRING, Types.STRING))
-      .withTableName("user")
-      .withFieldNames(Array())
-      .withZkQuorum("")
-      .build()
-    tEnv.fromTableSource(hbaseSource)
 
     // 当结果表为Hive表时
     //    tEnv.getConfig.setSqlDialect(SqlDialect.HIVE)
